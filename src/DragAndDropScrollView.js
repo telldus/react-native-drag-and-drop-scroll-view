@@ -93,21 +93,30 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 
 	const [ selectedIndex, setSelectedIndex ] = useState(-1);
 
+	const animateSpring = useCallback((animatedValue: Object, toValue: number, configs?: Object = {}, callback?: Function): any => {
+		return Animated.spring(animatedValue, {
+			toValue,
+			stiffness: 5000,
+			damping: 500,
+			mass: 3,
+			useNativeDriver: false,
+			...configs,
+		}).start((event: Object) => {
+			if (event.finished && callback) {
+				callback();
+			}
+		});
+	}, []);
+
 	const normalizeGrid = useCallback((key: number) => {
 		const animatedScaleDropGrid = _animatedScaleGrids.current[key];
 		if (!animatedScaleDropGrid) {
 			return;
 		}
 
-		Animated.spring(animatedScaleDropGrid, {
-			toValue: 1,
-			stiffness: 5000,
-			damping: 500,
-			mass: 3,
-			useNativeDriver: false,
-		}).start();
+		animateSpring(animatedScaleDropGrid, 1);
 		delete _dropIndexesQueue.current[key];
-	}, []);
+	}, [animateSpring]);
 
 	const animateDropped = useCallback((callback?: Function) => {
 		let _index = _gridIndexToDrop.current;
@@ -132,33 +141,15 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			y: nextY = 0,
 		} = (_scrollOffset && _scrollOffset.current) ? _scrollOffset.current : {};
 		Animated.parallel([
-			Animated.spring(_animatedTop.current, {
-				toValue: y - nextY,
-				stiffness: 5000,
-				damping: 500,
-				mass: 3,
-				useNativeDriver: false,
-			}),
-			Animated.spring(_animatedLeft.current, {
-				toValue: x - nextX,
-				stiffness: 5000,
-				damping: 500,
-				mass: 3,
-				useNativeDriver: false,
-			}),
-			Animated.spring(_animatedScaleSelected.current, {
-				toValue: 1,
-				stiffness: 5000,
-				damping: 500,
-				mass: 3,
-				useNativeDriver: false,
-			}),
+			animateSpring(_animatedTop.current, y - nextY),
+			animateSpring(_animatedLeft.current, x - nextX),
+			animateSpring(_animatedScaleSelected.current, 1),
 		]).start((event: Object) => {
 			if (event.finished && callback) {
 				callback();
 			}
 		});
-	}, [selectedIndex]);
+	}, [animateSpring, selectedIndex]);
 
 	const commonActionsOnRelease = useCallback(() => {
 		Object.keys(_dropIndexesQueue.current).forEach((key: string) => {
@@ -300,13 +291,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 							return;
 						}
 
-						Animated.spring(animatedScaleDropGrid, {
-							toValue: 0.8,
-							stiffness: 5000,
-							damping: 500,
-							mass: 3,
-							useNativeDriver: false,
-						}).start();
+						animateSpring(animatedScaleDropGrid, 0.8);
 					} else if (_dropIndexesQueue.current[key]) {
 						normalizeGrid(parseInt(key, 10));
 					}
@@ -339,7 +324,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			},
 			onPanResponderRelease: onRelease,
 		});
-	}, [normalizeGrid, onRelease, scrollDistanceFactor, selectedIndex, startScrollThresholdFactor]);
+	}, [animateSpring, normalizeGrid, onRelease, scrollDistanceFactor, selectedIndex, startScrollThresholdFactor]);
 
 	const _move = useCallback((index: number) => {
 		const selectedItemInfo = _rowInfo.current[index];
@@ -356,14 +341,8 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		_animatedTop.current.setValue(selectedItemInfo.y - nextY);
 		_animatedLeft.current.setValue(selectedItemInfo.x - nextX);
 
-		Animated.spring(_animatedScaleSelected.current, {
-			toValue: 1.2,
-			stiffness: 5000,
-			damping: 500,
-			mass: 3,
-			useNativeDriver: false,
-		}).start();
-	}, []);
+		animateSpring(_animatedScaleSelected.current, 1.2);
+	}, [animateSpring]);
 
 	const _moveEnd = useCallback(() => {
 		if (!_hasMoved.current) {
