@@ -79,7 +79,6 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	const _refSelected = useRef({});
 	const _dropIndexesQueue = useRef({});
 	const _gridIndexToDrop = useRef(-1);
-	const _currentGest = useRef({});
 	const _containerLayoutInfo = useRef({});
 	const _hasMoved = useRef(false);
 	const _scrollViewRef = useRef({});
@@ -231,7 +230,6 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	const _panResponder = useMemo((): Object => {
 		return PanResponder.create({
 			onStartShouldSetPanResponderCapture: (evt: Object, gestureState: Object): boolean => {
-				_currentGest.current = gestureState;
 				return false;
 			},
 			onMoveShouldSetPanResponder: (evt: Object, gestureState: Object): boolean => {
