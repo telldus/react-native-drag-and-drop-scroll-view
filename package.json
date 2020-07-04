@@ -12,7 +12,10 @@
     "react-native-drag-and-drop-scroll-view.podspec"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "lint_autofix": "eslint . --fix",
+    "flow": "node_modules/.bin/flow"
   },
   "repository": {
     "type": "git",
@@ -34,6 +37,20 @@
     "react-native": ">=0.60.0-rc.0 <1.0.x"
   },
   "devDependencies": {
+    "@babel/cli": "^7.10.4",
+    "@babel/core": "^7.10.4",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-object-rest-spread": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "@babel/preset-flow": "^7.10.4",
+    "@babel/preset-react": "^7.10.4",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.4.0",
+    "eslint-plugin-flowtype": "^5.2.0",
+    "eslint-plugin-react": "^7.20.3",
+    "eslint-plugin-react-hooks": "^4.0.5",
+    "flow-bin": "^0.113.0",
     "react": "^16.9.0",
     "react-native": "^0.61.5"
   }
