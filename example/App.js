@@ -8,20 +8,20 @@
  * https://github.com/facebook/react-native
  */
 
-import React, { Component } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import React, {Component} from 'react';
+import {StyleSheet, Text, View} from 'react-native';
 import DragAndDropScrollView from 'react-native-drag-and-drop-scroll-view';
 
 export default class App extends Component<{}> {
   state = {
     status: 'starting',
-    message: '--'
+    message: '--',
   };
   componentDidMount() {
     DragAndDropScrollView.sampleMethod('Testing', 123, (message) => {
       this.setState({
         status: 'native callback received',
-        message
+        message,
       });
     });
   }
