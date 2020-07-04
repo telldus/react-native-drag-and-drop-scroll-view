@@ -16,15 +16,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/github_account/react-native-drag-and-drop-scroll-view.git",
-    "baseUrl": "https://github.com/github_account/react-native-drag-and-drop-scroll-view"
+    "url": "git+https://github.com/telldus/react-native-drag-and-drop-scroll-view.git",
+    "baseUrl": "https://github.com/telldus/react-native-drag-and-drop-scroll-view"
   },
   "keywords": [
     "react-native"
   ],
   "author": {
     "name": "Your Name",
-    "email": "yourname@email.com"
+    "email": "rimnesh.fernandez@telldus.com"
   },
   "license": "MIT",
   "licenseFilename": "LICENSE",
