@@ -319,7 +319,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 						ios,
 						android,
 					} = scrollDistanceFactor;
-					const scrollDistance = Platform.OS === 'ios' ? ios : heightSelected * android;
+					const scrollDistance = Platform.OS === 'ios' ? (heightSelected * ios) : (heightSelected * android);
 					if (shouldMoveDown) {
 						_scrollViewRef.current.scrollTo({
 							x: nextX || 0,
