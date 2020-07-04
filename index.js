@@ -1,5 +1,3 @@
-import { NativeModules } from 'react-native';
-
-const { DragAndDropScrollView } = NativeModules;
+import DragAndDropScrollView from './src/DragAndDropScrollView';
 
 export default DragAndDropScrollView;
