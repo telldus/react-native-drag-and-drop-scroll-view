@@ -38,7 +38,14 @@ import {
 
 import Row from './Row';
 
-const DragAndDropScrollView = memo<Object>((props: Object): Object => {
+export interface Props {
+	data: Array<any>,
+	renderItem: () => Object,
+	extraData?: Object,
+	onSortOrderUpdate: (Array<any>) => void,
+} // Also all the ScrollView props
+
+const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 
 	const {
 		data = [],
@@ -436,6 +443,7 @@ const DragAndDropScrollView = memo<Object>((props: Object): Object => {
 			onLayout={onLayoutContainer}
 			ref={_containerRef}>
 			<Animated.ScrollView
+				// $FlowFixMe
 				{...props}
 				ref={_scrollViewRef}
 				onScroll={_onScroll}
