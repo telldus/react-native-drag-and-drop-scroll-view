@@ -43,7 +43,9 @@ export interface Props {
 	renderItem: () => Object,
 	extraData?: Object,
 	onSortOrderUpdate: (Array<any>) => void,
-} // Also all the ScrollView props
+	onScroll?: (Object) => void,
+	scrollEventThrottle?: number,
+} // Also all other ScrollView Props
 
 const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 
@@ -52,6 +54,8 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		renderItem,
 		extraData,
 		onSortOrderUpdate,
+		onScroll,
+		scrollEventThrottle = 12,
 	} = props;
 
 	const [ dataInState, setDataInState ] = useState(data);
@@ -377,9 +381,12 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		});
 	}, []);
 
-	const _onScroll = useCallback(({nativeEvent}: Object) => {
-		_scrollOffset.current = nativeEvent.contentOffset;
-	}, []);
+	const _onScroll = useCallback((event: Object) => {
+		_scrollOffset.current = event.nativeEvent.contentOffset;
+		if (onScroll) {
+			onScroll(event);
+		}
+	}, [onScroll]);
 
 	const rows = useMemo((): Array<Object> => {
 		return dataInState.map((item: Object, index: number): Object => {
@@ -447,7 +454,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				{...props}
 				ref={_scrollViewRef}
 				onScroll={_onScroll}
-				scrollEventThrottle={12}>
+				scrollEventThrottle={scrollEventThrottle}>
 				{rows}
 			</Animated.ScrollView>
 			{!!selectedItem && selectedItem}
