@@ -38,6 +38,11 @@ import {
 
 import Row from './Row';
 
+type ScrollDistanceFactor = {
+	ios: number,
+	android: number,
+};
+
 export interface Props {
 	data: Array<any>,
 	renderItem: () => Object,
@@ -45,6 +50,8 @@ export interface Props {
 	onSortOrderUpdate: (Array<any>) => void,
 	onScroll?: (Object) => void,
 	scrollEventThrottle?: number,
+	scrollDistanceFactor?: ScrollDistanceFactor,
+	startScrollThresholdFactor?: number,
 } // Also all other ScrollView Props
 
 const DragAndDropScrollView = memo<Object>((props: Props): Object => {
@@ -56,6 +63,8 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		onSortOrderUpdate,
 		onScroll,
 		scrollEventThrottle = 12,
+		scrollDistanceFactor = {ios: 1, android: 0.2},
+		startScrollThresholdFactor = 1,
 	} = props;
 
 	const [ dataInState, setDataInState ] = useState(data);
@@ -304,9 +313,13 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 						normalizeGrid(parseInt(key, 10));
 					}
 
-					const shouldMoveDown = top > (containerH - heightSelected);
-					const shouldMoveUp = top < (containerY + heightSelected);
-					const scrollDistance = Platform.OS === 'ios' ? heightSelected : heightSelected * 0.2;
+					const shouldMoveDown = top > (containerH - (heightSelected * startScrollThresholdFactor));
+					const shouldMoveUp = top < (containerY + (heightSelected * startScrollThresholdFactor));
+					const {
+						ios,
+						android,
+					} = scrollDistanceFactor;
+					const scrollDistance = Platform.OS === 'ios' ? ios : heightSelected * android;
 					if (shouldMoveDown) {
 						_scrollViewRef.current.scrollTo({
 							x: nextX || 0,
@@ -328,7 +341,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			},
 			onPanResponderRelease: onRelease,
 		});
-	}, [normalizeGrid, onRelease, selectedIndex]);
+	}, [normalizeGrid, onRelease, scrollDistanceFactor, selectedIndex, startScrollThresholdFactor]);
 
 	const _move = useCallback((index: number) => {
 		const selectedItemInfo = _rowInfo.current[index];
