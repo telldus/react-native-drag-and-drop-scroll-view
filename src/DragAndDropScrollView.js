@@ -323,6 +323,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				return false;
 			},
 			onPanResponderRelease: onRelease,
+			onPanResponderTerminate: onRelease,
 		});
 	}, [animateSpring, normalizeGrid, onRelease, scrollDistanceFactor, selectedIndex, startScrollThresholdFactor]);
 
