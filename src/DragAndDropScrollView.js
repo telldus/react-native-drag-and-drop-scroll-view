@@ -67,13 +67,6 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		startScrollThresholdFactor = 1,
 	} = props;
 
-	const [ dataInState, setDataInState ] = useState(data);
-
-	useEffect(() => {
-		setDataInState(data);
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [data.length]);
-
 	const _rowInfo = useRef({});
 	const _rowRefs = useRef({});
 	const _refSelected = useRef({});
@@ -170,10 +163,10 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		if (_dropIndexesQueue.current[_gridIndexToDrop.current]) {
 			const dropIndex = _gridIndexToDrop.current;
 			let newData = [], droppedIndex;
-			dataInState.map((dis: Object, i: number): Object => {
+			data.map((dis: Object, i: number): Object => {
 				if (parseInt(selectedIndex, 10) !== parseInt(i, 10)) {
 					if (parseInt(dropIndex, 10) === parseInt(i, 10)) {
-						newData.push(dataInState[selectedIndex]);
+						newData.push(data[selectedIndex]);
 						droppedIndex = newData.length - 1;
 					} else {
 						newData.push(dis);
@@ -183,19 +176,18 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			let newDataL2 = [];
 			if (parseInt(dropIndex, 10) > parseInt(selectedIndex, 10)) {
 				let newDataL1 = newData.slice(0, droppedIndex);
-				newDataL1.push(dataInState[parseInt(dropIndex, 10)]);
+				newDataL1.push(data[parseInt(dropIndex, 10)]);
 				newDataL2 = newDataL1.concat(newData.slice(droppedIndex));
 			} else {
 				let newDataL1 = newData.slice(0, droppedIndex + 1);
-				newDataL1.push(dataInState[parseInt(dropIndex, 10)]);
+				newDataL1.push(data[parseInt(dropIndex, 10)]);
 				newDataL2 = newDataL1.concat(newData.slice(droppedIndex + 1));
 			}
-			setDataInState(newDataL2);
 			if (onSortOrderUpdate) {
 				onSortOrderUpdate(newDataL2);
 			}
 		}
-	}, [dataInState, onSortOrderUpdate, selectedIndex]);
+	}, [data, onSortOrderUpdate, selectedIndex]);
 
 	const onRelease = useCallback((evt: Object, gestureState: Object) => {
 		animateDropped(() => {
@@ -323,7 +315,6 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				return false;
 			},
 			onPanResponderRelease: onRelease,
-			onPanResponderTerminate: onRelease,
 		});
 	}, [animateSpring, normalizeGrid, onRelease, scrollDistanceFactor, selectedIndex, startScrollThresholdFactor]);
 
@@ -380,7 +371,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	}, [onScroll]);
 
 	const rows = useMemo((): Array<Object> => {
-		return dataInState.map((item: Object, index: number): Object => {
+		return data.map((item: Object, index: number): Object => {
 
 			_animatedScaleGrids.current = {
 				[index]: _animatedScaleGrids.current[index] || new Animated.Value(1),
@@ -405,7 +396,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 					}}/>
 			);
 		});
-	}, [dataInState, _setRowRefs, _onLayoutRow, renderItem, _move, _moveEnd, extraData]);
+	}, [data, _setRowRefs, _onLayoutRow, renderItem, _move, _moveEnd, extraData]);
 
 	const selectedItem = useMemo((): null | Object => {
 		if (selectedIndex === -1) {
@@ -416,7 +407,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			<Row
 				key={`${selectedIndex}-selected`}
 				renderItem={renderItem}
-				item={dataInState[selectedIndex]}
+				item={data[selectedIndex]}
 				index={`${selectedIndex}-selected`}
 				moveEnd={_moveEnd}
 				setRowRefs={_setRowRefSelected}
@@ -430,7 +421,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				}}
 				extraData={extraData}/>
 		);
-	}, [selectedIndex, renderItem, dataInState, _moveEnd, _setRowRefSelected, extraData]);
+	}, [selectedIndex, renderItem, data, _moveEnd, _setRowRefSelected, extraData]);
 
 	return (
 		<View
