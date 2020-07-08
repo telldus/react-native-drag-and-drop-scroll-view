@@ -52,6 +52,7 @@ export interface Props {
 	scrollEventThrottle?: number,
 	scrollDistanceFactor?: ScrollDistanceFactor,
 	startScrollThresholdFactor?: number,
+	enableDragDrop?: boolean,
 } // Also all other ScrollView Props
 
 const DragAndDropScrollView = memo<Object>((props: Props): Object => {
@@ -65,6 +66,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		scrollEventThrottle = 12,
 		scrollDistanceFactor = {ios: 1, android: 0.2},
 		startScrollThresholdFactor = 1,
+		enableDragDrop = true,
 	} = props;
 
 	const _rowInfo = useRef({});
@@ -211,6 +213,9 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	}, []);
 
 	const _panResponder = useMemo((): Object => {
+		if (!enableDragDrop) {
+			return {};
+		}
 		return PanResponder.create({
 			onStartShouldSetPanResponderCapture: (evt: Object, gestureState: Object): boolean => {
 				return false;
@@ -316,9 +321,13 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			},
 			onPanResponderRelease: onRelease,
 		});
-	}, [animateSpring, normalizeGrid, onRelease, scrollDistanceFactor, selectedIndex, startScrollThresholdFactor]);
+	}, [enableDragDrop, animateSpring, normalizeGrid, onRelease, scrollDistanceFactor, selectedIndex, startScrollThresholdFactor]);
 
 	const _move = useCallback((index: number) => {
+		if (!enableDragDrop) {
+			return;
+		}
+
 		const selectedItemInfo = _rowInfo.current[index];
 		setSelectedIndex(index);
 		if (!_refSelected.current) {
@@ -334,15 +343,19 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		_animatedLeft.current.setValue(selectedItemInfo.x - nextX);
 
 		animateSpring(_animatedScaleSelected.current, 1.2);
-	}, [animateSpring]);
+	}, [animateSpring, enableDragDrop]);
 
 	const _moveEnd = useCallback(() => {
+		if (!enableDragDrop) {
+			return;
+		}
+
 		if (!_hasMoved.current) {
 			setSelectedIndex(-1);
 			_hasMoved.current = false;
 		}
 		commonActionsOnRelease();
-	}, [commonActionsOnRelease]);
+	}, [commonActionsOnRelease, enableDragDrop]);
 
 	const _onLayoutRow = useCallback((event: Object, index: number) => {
 		const _rowInfoNext = {
