@@ -91,16 +91,17 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	const _animatedScaleBin = useRef(new Animated.Value(0));
 
 	const _animatedOpacityBin = useRef(new Animated.Value(0));
+	const _shouldDelete = useRef(false);
 
 	const _animatedTop = useRef(new Animated.Value(0));
 	const _animatedLeft = useRef(new Animated.Value(0));
 
 	const [ selectedIndex, setSelectedIndex ] = useState(-1);
 
-	const animateTiming = useCallback((animatedValue: Object, toValue: number, duration?: Object = 400, callback?: Function): any => {
+	const animateTiming = useCallback((animatedValue: Object, toValue: number, configs: Object = {}, callback?: Function): any => {
 		return Animated.timing(animatedValue, {
 			toValue,
-			duration,
+			...configs,
 		}).start((event: Object) => {
 			if (event.finished && callback) {
 				callback();
@@ -114,7 +115,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			return;
 		}
 
-		animateTiming(animatedScaleDropGrid, 1, 50);
+		animateTiming(animatedScaleDropGrid, 1, {duration: 50});
 		delete _dropIndexesQueue.current[key];
 	}, [animateTiming]);
 
@@ -140,10 +141,33 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			x: nextX = 0,
 			y: nextY = 0,
 		} = (_scrollOffset && _scrollOffset.current) ? _scrollOffset.current : {};
+
+		let animatedTop = y;
+		let animatedLeft = x;
+		let animatedScale = 1;
+		if (_shouldDelete.current) {
+			const {
+				x: xBin = 0,
+				y: yBin = 0,
+				height: heightBin = 0,
+			}: Object = _binLayoutInfo.current || {};
+			const selectedItemInfo = _rowInfo.current[selectedIndex];
+			const {
+				width: widthSelected,
+				height: heightSelected,
+			} = selectedItemInfo;
+
+			animatedTop = yBin - (heightSelected * 0.5) + (heightBin * 0.5);
+			animatedLeft = xBin + (widthSelected * 0.5);
+			animatedScale = 0;
+		}
+		animatedTop = animatedTop - nextY;
+		animatedLeft = animatedLeft - nextX;
+
 		Animated.parallel([
-			animateTiming(_animatedTop.current, y - nextY, 200),
-			animateTiming(_animatedLeft.current, x - nextX, 200),
-			animateTiming(_animatedScaleSelected.current, 1, 200),
+			animateTiming(_animatedTop.current, animatedTop, {duration: 200}),
+			animateTiming(_animatedLeft.current, animatedLeft, {duration: 200}),
+			animateTiming(_animatedScaleSelected.current, animatedScale, {duration: 200}),
 		]).start((event: Object) => {
 			if (event.finished && callback) {
 				callback();
@@ -198,7 +222,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 
 	const onRelease = useCallback((evt: Object, gestureState: Object) => {
 		animateDropped(() => {
-			animateTiming(_animatedScaleBin.current, 0, 300, () => {
+			animateTiming(_animatedScaleBin.current, 0, {duration: 300, delay: _shouldDelete.current ? 500 : 200}, () => {
 				arrageGrids();
 				_hasMoved.current = false;
 				commonActionsOnRelease();
@@ -277,22 +301,28 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				_animatedLeft.current.setValue(left);
 
 				const {
-					x: xBin = 0,
-					y: yBin = 0,
+					x1: x1Bin = 0,
+					y1: y1Bin = 0,
 					height: heightBin = 0,
 					width: widthBin = 0,
 				}: Object = _binLayoutInfo.current || {};
 				if (showBin && heightBin) {
 					const proximity = 10;
-					const shallRemove = moveX > (xBin - proximity) && (moveY + nextY) > (yBin - proximity) && moveX < (xBin + widthBin + proximity) && (moveY + nextY) < (yBin + heightBin + proximity);
+					const shallRemove = moveX > (x1Bin - proximity) && (moveY + nextY) > (y1Bin - proximity) && moveX < (x1Bin + widthBin + proximity) && (moveY + nextY) < (y1Bin + heightBin + proximity);
 					if (shallRemove) {
 						_animatedOpacityBin.current.setValue(1);
 						commonActionsOnRelease();
 						_gridIndexToDrop.current = -1;
+						_shouldDelete.current = true;
 						return;
 					}
-					_animatedOpacityBin.current.setValue(0.5);
+
+					if (_animatedOpacityBin.current.__getValue() !== 0.5) {
+						_animatedOpacityBin.current.setValue(0.5);
+					}
 				}
+
+				_shouldDelete.current = false;
 
 				Object.keys(_rowInfo.current).forEach((key: string) => {
 					const {
@@ -315,7 +345,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 							return;
 						}
 
-						animateTiming(animatedScaleDropGrid, 0.8, 50);
+						animateTiming(animatedScaleDropGrid, 0.8, {duration: 50});
 					} else if (_dropIndexesQueue.current[key]) {
 						normalizeGrid(parseInt(key, 10));
 					}
@@ -375,8 +405,8 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		_animatedOpacityBin.current.setValue(0.5);
 
 		Animated.parallel([
-			animateTiming(_animatedScaleSelected.current, 1.2, 300),
-			animateTiming(_animatedScaleBin.current, 1, 300),
+			animateTiming(_animatedScaleSelected.current, 1.2, {duration: 300}),
+			animateTiming(_animatedScaleBin.current, 1, {duration: 300}),
 		]).start();
 	}, [animateTiming, enableDragDrop]);
 
@@ -386,7 +416,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		}
 
 		if (!_hasMoved.current) {
-			animateTiming(_animatedScaleBin.current, 0, 300, () => {
+			animateTiming(_animatedScaleBin.current, 0, {duration: 300}, () => {
 				commonActionsOnRelease();
 				setSelectedIndex(-1);
 				_hasMoved.current = false;
@@ -415,15 +445,13 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 
 	const onLayoutBin = useCallback((event: Object) => {
 		_binLayoutInfo.current = {
-			..._binLayoutInfo.current,
-			height: event.nativeEvent.layout.height,
-			width: event.nativeEvent.layout.width,
+			...event.nativeEvent.layout,
 		};
-		_binRef.current.measureInWindow((x: number, y: number, _width: number, _height: number) => {
+		_binRef.current.measureInWindow((x1: number, y1: number, _width: number, _height: number) => {
 			_binLayoutInfo.current = {
 				..._binLayoutInfo.current,
-				x,
-				y,
+				x1,
+				y1,
 			};
 		});
 	}, []);
