@@ -27,6 +27,7 @@ import React, {
 	useCallback,
 	useRef,
 	useState,
+	useEffect,
 } from 'react';
 import {
 	Platform,
@@ -54,6 +55,7 @@ export interface Props {
 	startScrollThresholdFactor?: number,
 	enableDragDrop?: boolean,
 	showBin?: boolean,
+	onDelete?: (number, any, Array<any>, Object) => void,
 } // Also all other ScrollView Props
 
 const DragAndDropScrollView = memo<Object>((props: Props): Object => {
@@ -69,6 +71,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		startScrollThresholdFactor = 1,
 		enableDragDrop = true,
 		showBin = false,
+		onDelete,
 	} = props;
 
 	const _rowRefs = useRef({});
@@ -90,6 +93,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	const _animatedScaleSelected = useRef(new Animated.Value(1));
 	const _animatedScaleBin = useRef(new Animated.Value(0));
 
+	const _animatedWidthDeleting = useRef(new Animated.Value(0));
 	const _animatedOpacityBin = useRef(new Animated.Value(0));
 	const _shouldDelete = useRef(false);
 
@@ -97,10 +101,31 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	const _animatedLeft = useRef(new Animated.Value(0));
 
 	const [ selectedIndex, setSelectedIndex ] = useState(-1);
+	const [ deleteConf, setDeleteConf ] = useState({
+		index: -1,
+		animate: false,
+	});
+
+	useEffect(() => {
+		const numberOfItems = data.length;
+		const infoListLength = Object.keys(_rowInfo.current).length;
+		const scaleListLength = Object.keys(_animatedScaleGrids.current).length;
+		if (infoListLength > numberOfItems) {
+			for (let i = (numberOfItems); i < infoListLength; i++) {
+				delete _rowInfo.current[i];
+			}
+		}
+		if (scaleListLength > numberOfItems) {
+			for (let i = (numberOfItems); i < scaleListLength; i++) {
+				delete _animatedScaleGrids.current[i];
+			}
+		}
+	}, [data]);
 
 	const animateTiming = useCallback((animatedValue: Object, toValue: number, configs: Object = {}, callback?: Function): any => {
 		return Animated.timing(animatedValue, {
 			toValue,
+			useNativeDriver: false,
 			...configs,
 		}).start((event: Object) => {
 			if (event.finished && callback) {
@@ -108,6 +133,30 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			}
 		});
 	}, []);
+
+	const animateDeleted = useCallback((callback: Function) => {
+		if (deleteConf.index !== -1) {
+			setDeleteConf({
+				...deleteConf,
+				animate: true,
+			});
+			const selectedItemInfo = _rowInfo.current[deleteConf.index];
+			const {
+				width: widthSelected,
+			} = selectedItemInfo;
+			_animatedWidthDeleting.current.setValue(widthSelected);
+
+			animateTiming(_animatedWidthDeleting.current, 0, {duration: 300}, () => {
+				if (callback) {
+					callback();
+				}
+				setDeleteConf({
+					index: -1,
+					animate: false,
+				});
+			});
+		}
+	}, [animateTiming, deleteConf]);
 
 	const normalizeGrid = useCallback((key: number) => {
 		const animatedScaleDropGrid = _animatedScaleGrids.current[key];
@@ -194,6 +243,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		if (_dropIndexesQueue.current[_gridIndexToDrop.current]) {
 			const dropIndex = _gridIndexToDrop.current;
 			let newData = [], droppedIndex;
+
 			data.map((dis: Object, i: number): Object => {
 				if (parseInt(selectedIndex, 10) !== parseInt(i, 10)) {
 					if (parseInt(dropIndex, 10) === parseInt(i, 10)) {
@@ -205,6 +255,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				}
 			});
 			let newDataL2 = [];
+
 			if (parseInt(dropIndex, 10) > parseInt(selectedIndex, 10)) {
 				let newDataL1 = newData.slice(0, droppedIndex);
 				newDataL1.push(data[parseInt(dropIndex, 10)]);
@@ -214,6 +265,9 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				newDataL1.push(data[parseInt(dropIndex, 10)]);
 				newDataL2 = newDataL1.concat(newData.slice(droppedIndex + 1));
 			}
+
+			newDataL2 = newDataL2.filter((element: any): boolean => element !== undefined);
+
 			if (onSortOrderUpdate) {
 				onSortOrderUpdate(newDataL2);
 			}
@@ -223,13 +277,16 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 	const onRelease = useCallback((evt: Object, gestureState: Object) => {
 		animateDropped(() => {
 			animateTiming(_animatedScaleBin.current, 0, {duration: 300, delay: _shouldDelete.current ? 500 : 200}, () => {
+				if (_shouldDelete.current && onDelete && selectedIndex !== -1) {
+					onDelete(selectedIndex, data[selectedIndex], data, {animateDeleted});
+				}
 				arrageGrids();
 				_hasMoved.current = false;
 				commonActionsOnRelease();
 				setSelectedIndex(-1);
 			});
 		});
-	}, [animateDropped, animateTiming, arrageGrids, commonActionsOnRelease]);
+	}, [animateDeleted, animateDropped, animateTiming, arrageGrids, commonActionsOnRelease, data, onDelete, selectedIndex]);
 
 	const _setRowRefs = useCallback((ref: any, index: number) => {
 		const _rowRefsNew = {
@@ -301,6 +358,11 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				_animatedLeft.current.setValue(left);
 
 				const {
+					index: delIndex,
+					animate: delAnimate,
+				} = deleteConf;
+
+				const {
 					x1: x1Bin = 0,
 					y1: y1Bin = 0,
 					height: heightBin = 0,
@@ -310,6 +372,13 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 					const proximity = 10;
 					const shallRemove = moveX > (x1Bin - proximity) && (moveY + nextY) > (y1Bin - proximity) && moveX < (x1Bin + widthBin + proximity) && (moveY + nextY) < (y1Bin + heightBin + proximity);
 					if (shallRemove) {
+						if (delIndex !== selectedIndex) {
+							setDeleteConf({
+								...deleteConf,
+								index: selectedIndex,
+							});
+						}
+
 						_animatedOpacityBin.current.setValue(1);
 						commonActionsOnRelease();
 						_gridIndexToDrop.current = -1;
@@ -320,6 +389,13 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 					if (_animatedOpacityBin.current.__getValue() !== 0.5) {
 						_animatedOpacityBin.current.setValue(0.5);
 					}
+				}
+
+				if (delAnimate || delIndex !== -1) {
+					setDeleteConf({
+						index: -1,
+						animate: false,
+					});
 				}
 
 				_shouldDelete.current = false;
@@ -378,7 +454,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 			},
 			onPanResponderRelease: onRelease,
 		});
-	}, [enableDragDrop, onRelease, selectedIndex, showBin, commonActionsOnRelease, startScrollThresholdFactor, scrollDistanceFactor, animateTiming, normalizeGrid]);
+	}, [deleteConf, enableDragDrop, onRelease, selectedIndex, showBin, commonActionsOnRelease, startScrollThresholdFactor, scrollDistanceFactor, animateTiming, normalizeGrid]);
 
 	const _move = useCallback((index: number) => {
 		if (!enableDragDrop) {
@@ -387,6 +463,10 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 
 		const selectedItemInfo = _rowInfo.current[index];
 		setSelectedIndex(index);
+		setDeleteConf({
+			index: -1,
+			animate: false,
+		});
 
 		if (!_refSelected.current) {
 			return;
@@ -471,6 +551,11 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 				..._animatedScaleGrids.current,
 			};
 
+			const {
+				index: delIndex,
+				animate: delAnimate,
+			} = deleteConf;
+
 			return (
 				<Row
 					key={`${index}`}
@@ -483,13 +568,15 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 					moveEnd={_moveEnd}
 					extraData={extraData}
 					style={{
+						width: (index === delIndex) && delAnimate ? _animatedWidthDeleting.current : undefined,
+						overflow: 'hidden',
 						transform: [{
 							scale: _animatedScaleGrids.current[index],
 						}],
 					}}/>
 			);
 		});
-	}, [data, _setRowRefs, _onLayoutRow, renderItem, _move, _moveEnd, extraData]);
+	}, [data, _setRowRefs, _onLayoutRow, renderItem, _move, _moveEnd, extraData, deleteConf]);
 
 	const selectedItem = useMemo((): null | Object => {
 		if (selectedIndex === -1) {
