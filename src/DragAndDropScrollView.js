@@ -604,6 +604,8 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 		);
 	}, [selectedIndex, renderItem, data, _moveEnd, _setRowRefSelected, extraData]);
 
+	const outputRange: Array<string> = ['#d9534f30', '#d9534f'];
+
 	return (
 		<>
 			<View
@@ -632,7 +634,7 @@ const DragAndDropScrollView = memo<Object>((props: Props): Object => {
 					borderRadius: 4,
 					backgroundColor: _animatedOpacityBin.current.interpolate({
 						inputRange: [0, 1],
-						outputRange: ['#d9534f30', '#d9534f'],
+						outputRange: outputRange,
 					}),
 					transform: [{
 						scaleY: _animatedScaleBin.current,
